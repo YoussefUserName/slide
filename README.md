@@ -1,3 +1,4 @@
+
 # L'objectif du projet 
 
 Nous permettre de trouver un parfum selon:
@@ -55,9 +56,14 @@ else:
             break
     return nb_pages + 1
 ```
-    
-    
 Pourquoi ```nb_pages + 1``` ?: Pour pouvoir faire du **scrapping sur toutes les pages** nous devions commencer à la page 2, car c'est là que le numéro de la page ressort, sur la page 1 le numéro ne ressort pas
+
+```{r, echo = FALSE, out.width="50%"}
+knitr::include_graphics("site.png", error = FALSE)
+```
+```{r, echo = FALSE, out.width="50%"}
+knitr::include_graphics("site2.png", error = FALSE)
+```
 
 ---
 
@@ -162,15 +168,19 @@ def verification_champ_prix(prix):
         prix = "NaN"
 
     return prix
+    ```
+```begin = prix.text.index("de") + 2``` le "+2" va permettre de dire au programme de scrapper à partir du deuxième caractère 
+
+```{r, echo = FALSE, out.width="50%"}
+knitr::include_graphics("price.png", error = FALSE)
 ```
-- ```begin = prix.text.index("de") + 2``` le "+2" va permettre de dire au programme de scrapper à partir du deuxième caractère (SCREEN À METTRE)
- 
 --- 
 # Procédures
 
 - De même ici, pour la collection et la notation du parfum par le consommateur:
 
-```def verification_champ_collection(collection):
+```
+def verification_champ_collection(collection):
     return collection.find("strong").text if collection is not None else "NaN"
 
 def verification_champ_note(note):
@@ -189,14 +199,128 @@ la 5ème étoile étant sur 70. Donc **1/5 représente 14**. C'est pourquoi **on
 
 - ```begin = note.index("width") + 6``` va permettre au code de comprendre qu'il doit commencer à scrapper à partir du 6ième caractère, car on ne peut pas transformer un **string** (chaîne de caractère) en **float** (nombre entier)
 
-(SCREEN À METTRE)
+```{r, echo = FALSE, out.width="50%"}
+knitr::include_graphics("note.png", error = FALSE)
+```
 
-# Le Web Scraping
+--- 
+#Procédures
+```
+def creation_fichier_csv(produits_parfum_csv):
+    df = pd.DataFrame.from_records([{
+        "marque": "Marque",
+        "collection": "Collection",
+        "type de produit": "Type de produit",
+        "prix pour 100 ml": "Prix pour 100 ml",
+        "note": "Note"
+    }])
+    df.to_csv(produits_parfum_csv, mode='w+', index=False, header=False)
 
 
+def ajout_parfum_csv(collection, marque, note, produits_parfum_csv, type_produit, prix):
+    df = pd.DataFrame.from_records([{
+        "marque": marque,
+        "collection": collection,
+        "type de produit": type_produit,
+        "prix pour 100 ml": prix,
+        "note": note
+    }])
+    df.to_csv(produits_parfum_csv, mode='a', index=False, header=False)
+```
 
-# La principale difficulté rencontrée 
+- Ces deux fonctions se répondent et vont nous permettre d'organiser nos données dans un dataframe pour que ce soit lisible et compréhensible
 
-Les nombreuses mise à jour et les changements de structure du site : remplacement des items <li> par les items <div> 
+---
+
+# Le web scrapping 
+
+Site choisi pour la réalisation de notre projet: **Notino.fr**
+
+```
+def get_page(num_page, s, type_parfum, type_plist, type_tri):
+    url = "https://www.notino.fr/parfums-femme/?f=" + \
+          str(num_page) + '-' + str(type_tri) + "-55544-55545" + str(type_plist[type_parfum])
+
+    res = s.post(url)
+    if res.url not in urls:
+        urls.append(url)
+        soup = bs4(res.text, "lxml")
+        return soup.find_all("li", {"class": "item"})
+
+    return None
+```
+- Pour pouvoir 'scrapper' toutes les pages, nous rajoutons les numéros de pages qui vont être générés par nos fonctions. Ainsi que le type de tri des parfums, et enfin, leurs caractéristiques olfactives
+
+---
+# Le web scrapping
+
+```
+def traitement_parfums(parfums, produits_parfum_csv):
+    for parfum in parfums:
+        marque = parfum.find("span", class_="brand").text
+        type_produit = verification_champ_type_produit(parfum.find("span", class_="subname"))
+        prix = verification_champ_prix(parfum.find("span", class_="unit-price"))
+        collection = verification_champ_collection(parfum.find("span", class_="name"))
+        note = verification_champ_note(str(parfum.find("span", class_="product-rating")))
+        ajout_parfum_csv(collection, marque, note, produits_parfum_csv, type_produit, prix)
+
+
+def afficher_resutat(produits_parfum_csv):
+    df = pd.read_csv(produits_parfum_csv)
+    print(df)
+
+
+def ajout_code_produits_parfum_csv(produits_parfum_csv):
+    df = pd.read_csv(produits_parfum_csv)
+    df.insert(0, "Code", [i for i in range(0, df.index.stop)])
+    df.to_csv(produits_parfum_csv, mode='w+', index=False, header=True)
+```
+---
+# Le web scrapping
+
+```
+def programme_principal():
+    saisie = saisie_utilisateur()
+    nb_pages = saisie['nb_pages']
+    type_tri = saisie['type_tri']
+    type_parfum = saisie['type_parfum']
+    type_plist = [
+        -34693, -34696, -57258, -34691, -57259,
+        -34694, -57257, -34700, -34699, -34702,
+        -34697, -34698, ""
+    ]
+    produits_parfum_csv = "produits_parfum.csv"
+    creation_fichier_csv(produits_parfum_csv)
+    s = requests.session()
+
+    for num_page in range(1, nb_pages):
+        parfums_page_num_page = get_page(num_page, s, type_parfum, type_plist, type_tri)
+        if parfums_page_num_page is not None:
+            traitement_parfums(parfums_page_num_page, produits_parfum_csv)
+            
+    ajout_code_produits_parfum_csv(produits_parfum_csv)
+    afficher_resutat(produits_parfum_csv)
+```
+
+```{r, echo = FALSE, out.width="50%"}
+knitr::include_graphics("url.png", error = FALSE)
+```
+
+---
+
+# Lancement du programme 
+```
+if __name__ == '__main__':
+        programme_principal()
+```
+
+- la commande ```if __name__ == '__main__'``` permet de contourner la distinction que va faire Python entre le module principal ```__main__``` et le module importé ```__name__```. Ici nous avons des fonctions créées (donc des modules importés) qui doivent fusionner entre elles, il faut alors toutes les rassembler dans le même module principal ```__main__```.
+Puis nous exécutons notre programme.
+
+---
+
+.pull-center[
+**FIN**
+]
 
 
