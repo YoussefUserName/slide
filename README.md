@@ -319,8 +319,7 @@ Puis nous exécutons notre programme.
 
 ---
 
-.pull-center[
 **FIN**
-]
+
 
 
