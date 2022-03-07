@@ -197,6 +197,6 @@ la 5ème étoile étant sur 70. Donc **1/5 représente 14**. C'est pourquoi **on
 
 # La principale difficulté rencontrée 
 
-Les nombreuses mise à jour et les changements de structure du site : remplacement des items <li> par les items <div>
+Les nombreuses mise à jour et les changements de structure du site : remplacement des items <li> par les items <div> 
 
 
