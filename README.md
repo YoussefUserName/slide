@@ -191,4 +191,12 @@ la 5ème étoile étant sur 70. Donc **1/5 représente 14**. C'est pourquoi **on
 
 (SCREEN À METTRE)
 
+# Le Web Scraping
+
+
+
+# La principale difficulté rencontrée 
+
+Les nombreuses mise à jour et les changements de structure du site
+
 
